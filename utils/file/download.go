@@ -60,7 +60,7 @@ func (d *Downloader) SetCoroutineNum(partCoroutineNum int) {
 }
 
 //Run 开始下载任务
-func (d *Downloader) Download(partFilePath string, backCall func(fileTotalSize int, fileName string)) error {
+func (d *Downloader) Download(partFilePath string, backCall func(fileTotalSize int, fileName string, Index int)) error {
 	if d.TotalPart == 1 {
 		err := d.downloadWhole()
 		return err
@@ -129,7 +129,7 @@ func (d *Downloader) Download(partFilePath string, backCall func(fileTotalSize i
 	for _, job := range jobs {
 		wg.Add(1)
 		sem <- 1 //当通道已满的时候将被阻塞
-		go func(job Part, fileTotalSize int, backCall func(fileTotalSize int, fileName string), partFilePath string) {
+		go func(job Part, fileTotalSize int, backCall func(fileTotalSize int, fileName string, Index int), partFilePath string) {
 			defer wg.Done()
 			err = d.downloadPart(job, fileTotalSize, backCall, partFilePath)
 			if err != nil {
@@ -178,7 +178,7 @@ func (d *Downloader) head() (bool, error) {
 }
 
 //下载分片
-func (d *Downloader) downloadPart(c Part, fileTotalSize int, backCall func(fileTotalSize int, fileName string), partFilePath string) error {
+func (d *Downloader) downloadPart(c Part, fileTotalSize int, backCall func(fileTotalSize int, fileName string, Index int), partFilePath string) error {
 	r, err := d.getNewRequest("GET")
 	if err != nil {
 		return err
@@ -213,7 +213,7 @@ func (d *Downloader) downloadPart(c Part, fileTotalSize int, backCall func(fileT
 	fileNamePrefix := fileName[0 : len(path.Base(d.FilePath))-len(path.Ext(d.FilePath))]
 	nowTime := time.Now().UnixNano() / 1e6
 	partFilePath = path.Join(partFilePath, fileNamePrefix+"_"+strconv.Itoa(c.Index)+"_"+strconv.FormatInt(nowTime, 10))
-	backCall(fileTotalSize, partFilePath)
+	backCall(fileTotalSize, partFilePath, c.Index)
 	log.Printf("partFilePath[%d]:%s", c.Index, partFilePath)
 
 	f, err := os.Create(partFilePath)

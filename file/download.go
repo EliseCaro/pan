@@ -48,7 +48,7 @@ func NewDownloaderWithPath(accessToken string, path string, localFilePath string
 }
 
 // 执行下载
-func (d *Downloader) Download(partFilePath string, backCall func(fileTotalSize int, fileName string)) error {
+func (d *Downloader) Download(partFilePath string, backCall func(fileTotalSize int, fileName string, Index int)) error {
 	downloadLink := ""
 	if d.LocalFilePath == "" || d.AccessToken == "" {
 		return errors.New("param error, localFilePath is empty")

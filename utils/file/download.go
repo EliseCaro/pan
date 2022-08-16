@@ -119,31 +119,38 @@ func (d *Downloader) Download(partFilePath string, backCall func(fileTotalSize i
 	// 删除临时文件
 	defer d.removePartFiles()
 
-	var wg sync.WaitGroup
-	isFailed := false
-	partCoroutineNum := d.PartCoroutineNum
-	if len(jobs) < partCoroutineNum {
-		partCoroutineNum = len(jobs)
-	}
-	sem := make(chan int, partCoroutineNum) //限制并发数，以防大文件下载导致占用服务器大量网络宽带和磁盘io
+	// 便利分片下载
 	for _, job := range jobs {
-		wg.Add(1)
-		sem <- 1 //当通道已满的时候将被阻塞
-		go func(job Part, fileTotalSize int, backCall func(fileTotalSize int, fileName string, Index int), partFilePath string) {
-			defer wg.Done()
-			err = d.downloadPart(job, fileTotalSize, backCall, partFilePath)
-			if err != nil {
-				log.Println("下载文件失败:", err, job)
-				isFailed = true //TODO 可能会有问题
-			}
-			<-sem
-		}(job, fileTotalSize, backCall, partFilePath)
+		if err = d.downloadPart(job, fileTotalSize, backCall, partFilePath); err != nil {
+			return errors.New(fmt.Sprintf(`云盘下载文件失败;%s`, err.Error()))
+		}
 	}
-	wg.Wait()
-	if isFailed == true {
-		log.Println("下载文件失败")
-		return errors.New("downloadPart failed")
-	}
+
+	//var wg sync.WaitGroup
+	//isFailed := false
+	//partCoroutineNum := d.PartCoroutineNum
+	//if len(jobs) < partCoroutineNum {
+	//	partCoroutineNum = len(jobs)
+	//}
+	//sem := make(chan int, partCoroutineNum) //限制并发数，以防大文件下载导致占用服务器大量网络宽带和磁盘io
+	//for _, job := range jobs {
+	//	wg.Add(1)
+	//	sem <- 1 //当通道已满的时候将被阻塞
+	//	go func(job Part, fileTotalSize int, backCall func(fileTotalSize int, fileName string, Index int), partFilePath string) {
+	//		defer wg.Done()
+	//		err = d.downloadPart(job, fileTotalSize, backCall, partFilePath)
+	//		if err != nil {
+	//			log.Println("下载文件失败:", err, job)
+	//			isFailed = true //TODO 可能会有问题
+	//		}
+	//		<-sem
+	//	}(job, fileTotalSize, backCall, partFilePath)
+	//}
+	//wg.Wait()
+	//if isFailed == true {
+	//	log.Println("下载文件失败")
+	//	return errors.New("downloadPart failed")
+	//}
 
 	return d.mergeFileParts()
 }

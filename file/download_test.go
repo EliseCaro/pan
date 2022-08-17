@@ -1,13 +1,16 @@
 package file
 
 import (
+	"fmt"
 	"github.com/EliseCaro/pan/conf"
 	"testing"
 )
 
 func TestDownload(t *testing.T) {
 	fileDownloader := NewDownloaderWithFsID(conf.TestData.AccessToken, conf.TestData.FsID, conf.TestData.LocalFilePath)
-	err := fileDownloader.Download()
+	err := fileDownloader.Download("切片存储路径", func(fileTotalSize int, fileName string, Index int) {
+		fmt.Println(fileTotalSize, fileName, Index)
+	})
 	if err != nil {
 		t.Fail()
 	} else {
@@ -17,7 +20,9 @@ func TestDownload(t *testing.T) {
 
 func TestDownloaderWithPath(t *testing.T) {
 	fileDownloader := NewDownloaderWithPath(conf.TestData.AccessToken, conf.TestData.Path, conf.TestData.LocalFilePath)
-	err := fileDownloader.Download()
+	err := fileDownloader.Download("切片存储路径", func(fileTotalSize int, fileName string, Index int) {
+		fmt.Println(fileTotalSize, fileName, Index)
+	})
 	if err != nil {
 		t.Fail()
 	} else {

@@ -62,7 +62,7 @@ func (d *Downloader) SetCoroutineNum(partCoroutineNum int) {
 //Run 开始下载任务
 func (d *Downloader) Download(partFilePath string, backCall func(fileTotalSize int, fileName string, Index int)) error {
 	if d.TotalPart == 1 {
-		err := d.downloadWhole()
+		err := d.downloadWhole(backCall)
 		return err
 	}
 	isSupportRange, err := d.head()
@@ -79,7 +79,7 @@ func (d *Downloader) Download(partFilePath string, backCall func(fileTotalSize i
 	log.Println("fileTotalSize:", fileTotalSize)
 
 	if isSupportRange == false || fileTotalSize <= d.PartSize { //不支持Range下载或者文件比较小，直接下载文件
-		err := d.downloadWhole()
+		err := d.downloadWhole(backCall)
 		return err
 	}
 
@@ -304,7 +304,7 @@ func (d *Downloader) removePartFiles() {
 }
 
 //直接下载整个文件
-func (d *Downloader) downloadWhole() error {
+func (d *Downloader) downloadWhole(backCall func(fileTotalSize int, fileName string, Index int)) error {
 	log.Println("downloadWhole")
 
 	// Get the data
@@ -324,6 +324,9 @@ func (d *Downloader) downloadWhole() error {
 		return err
 	}
 	defer out.Close()
+
+	// 加入直接下载回调
+	backCall(int(resp.ContentLength), d.FilePath, 0)
 
 	// 然后将响应流和文件流对接起来
 	_, err = io.Copy(out, resp.Body)
